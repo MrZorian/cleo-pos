@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Cleo POS</title>
+<style>
+  :root{
+    --ink:#0d1b2a; --ink-2:#1b3a4b; --paper:#f6f4ee; --line:#e2ddd2;
+    --accent:#1f7a5c; --accent-ink:#0c3a2b; --amber:#e07a2e; --danger:#b23a48;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:"Segoe UI",system-ui,-apple-system,sans-serif;
+    background:var(--paper); color:var(--ink); min-height:100dvh;
+    display:grid; place-items:center; padding:24px;
+    background-image:radial-gradient(circle at 1px 1px,#e7e2d6 1px,transparent 0);
+    background-size:22px 22px;
+  }
+  .card{
+    width:100%; max-width:400px; background:#fff; border:1px solid var(--line);
+    border-radius:16px; padding:34px 30px; box-shadow:0 24px 60px -30px rgba(13,27,42,.4);
+  }
+  .brand{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+  .mark{
+    width:38px;height:38px;border-radius:10px;background:var(--ink);color:#fff;
+    display:grid;place-items:center;font-weight:800;font-size:20px;letter-spacing:-1px;
+  }
+  .brand h1{font-size:22px;font-weight:800;letter-spacing:-.5px}
+  .sub{color:#6b6b6b;font-size:13.5px;margin:2px 0 24px 0}
+  label{display:block;font-size:12.5px;font-weight:600;color:var(--ink-2);margin:14px 0 5px}
+  input,select{
+    width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:10px;
+    font-size:15px;background:#fcfbf8;transition:border .15s,box-shadow .15s;
+  }
+  input:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(31,122,92,.12)}
+  button{
+    width:100%;margin-top:22px;padding:13px;border:none;border-radius:10px;
+    background:var(--ink);color:#fff;font-size:15px;font-weight:700;cursor:pointer;transition:.15s;
+  }
+  button:hover{background:var(--ink-2)}
+  button:disabled{opacity:.6;cursor:wait}
+  .toggle{text-align:center;margin-top:18px;font-size:13.5px;color:#6b6b6b}
+  .toggle a{color:var(--accent);font-weight:600;cursor:pointer;text-decoration:none}
+  .err{background:#fdecee;color:var(--danger);border:1px solid #f3c6cb;padding:10px 12px;border-radius:9px;font-size:13px;margin-top:14px;display:none}
+  .err.show{display:block}
+  .row{display:flex;gap:10px}
+  .row>div{flex:1}
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="brand"><div class="mark">C</div><h1>Cleo&nbsp;POS</h1></div>
+    <p class="sub" id="sub">Sign in to your register</p>
+
+    <div id="loginForm">
+      <label>Email</label>
+      <input id="li-email" type="email" autocomplete="username" placeholder="you@business.com">
+      <label>Password</label>
+      <input id="li-pass" type="password" autocomplete="current-password" placeholder="••••••••">
+      <div class="err" id="li-err"></div>
+      <button id="li-btn">Sign in</button>
+      <p class="toggle">New here? <a onclick="show('signup')">Create a business account</a></p>
+    </div>
+
+    <div id="signupForm" style="display:none">
+      <label>Business name</label>
+      <input id="su-biz" placeholder="Maple Street Coffee">
+      <div class="row">
+        <div><label>Your name</label><input id="su-name" placeholder="Alex Doe"></div>
+        <div><label>Currency</label>
+          <select id="su-cur">
+            <option>USD</option><option>EUR</option><option>GBP</option>
+            <option>PKR</option><option>AED</option><option>INR</option><option>CAD</option><option>AUD</option>
+          </select>
+        </div>
+      </div>
+      <label>Email</label>
+      <input id="su-email" type="email" placeholder="you@business.com">
+      <label>Password</label>
+      <input id="su-pass" type="password" placeholder="6+ characters">
+      <div class="err" id="su-err"></div>
+      <button id="su-btn">Create account &amp; start</button>
+      <p class="toggle">Already have an account? <a onclick="show('login')">Sign in</a></p>
+    </div>
+  </div>
+
+<script src="/config.js"></script>
+<script>
+const API = window.CLEO_API_URL || location.origin;
+function show(which){
+  document.getElementById('loginForm').style.display = which==='login'?'block':'none';
+  document.getElementById('signupForm').style.display = which==='signup'?'block':'none';
+  document.getElementById('sub').textContent = which==='login'?'Sign in to your register':'Set up your business in 30 seconds';
+}
+function err(id,msg){const e=document.getElementById(id);e.textContent=msg;e.classList.add('show');}
+function clearErr(id){document.getElementById(id).classList.remove('show');}
+
+async function post(path, body){
+  const r = await fetch(API+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const data = await r.json();
+  if(!r.ok) throw new Error(data.error||'Something went wrong');
+  return data;
+}
+function done(data){
+  localStorage.setItem('cleo_token', data.token);
+  localStorage.setItem('cleo_user', JSON.stringify(data.user));
+  localStorage.setItem('cleo_tenant', JSON.stringify(data.tenant));
+  location.href = '/app.html';
+}
+
+document.getElementById('li-btn').onclick = async (e)=>{
+  clearErr('li-err'); e.target.disabled=true;
+  try{ done(await post('/api/auth/login',{email:val('li-email'),password:val('li-pass')})); }
+  catch(ex){ err('li-err',ex.message); e.target.disabled=false; }
+};
+document.getElementById('su-btn').onclick = async (e)=>{
+  clearErr('su-err'); e.target.disabled=true;
+  try{ done(await post('/api/auth/signup',{
+    business:val('su-biz'),name:val('su-name'),currency:val('su-cur'),
+    email:val('su-email'),password:val('su-pass')
+  })); }
+  catch(ex){ err('su-err',ex.message); e.target.disabled=false; }
+};
+function val(id){return document.getElementById(id).value.trim();}
+document.querySelectorAll('input').forEach(i=>i.addEventListener('keydown',e=>{if(e.key==='Enter'){
+  (document.getElementById('signupForm').style.display==='block'?document.getElementById('su-btn'):document.getElementById('li-btn')).click();
+}}));
+if(localStorage.getItem('cleo_token')) location.href='/app.html';
+</script>
+</body>
+</html>
