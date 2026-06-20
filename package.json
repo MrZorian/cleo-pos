@@ -1,0 +1,13 @@
+{
+    "name": "cleo-pos",
+        "version": "1.0.0",
+        "description": "Zero-dependency multi-tenant SaaS POS",
+        "main": "server.js",
+        "scripts": {
+          "start": "node server.js"
+    },
+  "engines": {
+        "node": ">=22.5"
+  },
+  "license": "MIT"
+}
