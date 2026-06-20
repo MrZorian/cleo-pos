@@ -17,6 +17,9 @@ const { DatabaseSync } = require('node:sqlite');
 const PORT = process.env.PORT || 3000;
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'pos.db');
 const SECRET = process.env.AUTH_SECRET || 'dev-secret-change-me-in-production';
+
+// Ensure DB directory exists (important when DB_PATH points to a mounted volume)
+fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const TOKEN_TTL = 1000 * 60 * 60 * 24 * 7; // 7 days
 
